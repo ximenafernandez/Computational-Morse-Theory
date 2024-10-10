@@ -66,7 +66,7 @@ def collapse(X, pairs = None):
     for x in X.maximal_elements():
         for y in X.lower_covers(x):
             if len(X.upper_covers(y))==_sage_const_1 :
-                pairs.append([y,x])
+                pairs.append([y, x])
                 elements.remove(x)
                 elements.remove(y)
                 return collapse(X.subposet(elements), pairs)
@@ -93,7 +93,7 @@ def is_collapsible_vertex(X, v):
     
 # Generalized Morse Core
 
-def regular_Morse_aux(K, all_cells, critical_cells=None, sigma=None, P=None):
+def regular_vertex_reduction_aux(K, all_cells, critical_cells=None, sigma=None, P=None):
     """
     Recursive function to perform Morse core reduction on a simplicial complex.
     
@@ -130,14 +130,9 @@ def regular_Morse_aux(K, all_cells, critical_cells=None, sigma=None, P=None):
         if collapsible:
             print(v, 'collapsible vertex')
             print('checking regularity')
+            
             # check regularity
-            
-            # Initialize flow posets P(w, z) for each pair of cells w and z as entrance path posets
             P_aux = deepcopy(P)
-            
-            updated_pairs = []
-            regular = True
-
             updated_pairs = []
             regular = True  # Assume the structure is regular initially
 
@@ -172,7 +167,7 @@ def regular_Morse_aux(K, all_cells, critical_cells=None, sigma=None, P=None):
                     P[(p[_sage_const_0 ], p[_sage_const_1 ])] = P_aux[(p[_sage_const_0 ], p[_sage_const_1 ])]
 
                 # Recursively process the new complex
-                return regular_Morse_aux(K, all_cells, critical_cells, sigma, P)
+                return regular_vertex_reduction_aux(K, all_cells, critical_cells, sigma, P)
         
     # No regular collapsible vertex is found, pick a vertex and its open star as critical
     if len(K.vertices()) > _sage_const_0 :
@@ -189,12 +184,12 @@ def regular_Morse_aux(K, all_cells, critical_cells=None, sigma=None, P=None):
         K.remove_face((v,))
 
         # Continue iterating after removing the vertex
-        return regular_Morse_aux(K, all_cells, critical_cells, sigma, P)
+        return regular_vertex_reduction_aux(K, all_cells, critical_cells, sigma, P)
     
     # Return the final reduced complex, saved cells, and poset modifications
     return (K, all_cells, critical_cells, sigma, P)
     
 def regular_Morse_vertex_reduction(K):
-    K_red, all_cells, critical_cells, sigma, P = regular_Morse_aux(deepcopy(K), K.face_poset().list())
+    K_red, all_cells, critical_cells, sigma, P = regular_vertex_reduction_aux(K, K.face_poset().list())
     return K_red, critical_cells, sigma
 
