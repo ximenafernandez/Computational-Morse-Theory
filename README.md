@@ -1,1 +1,1 @@
-# DiscreteMorseTheory
+# Computational Discrete Morse Theory
