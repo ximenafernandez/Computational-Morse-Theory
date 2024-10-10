@@ -188,6 +188,6 @@ def regular_Morse_aux(K, all_cells, critical_cells=None, sigma=None, P=None):
     # Return the final reduced complex, saved cells, and poset modifications
     return (K, all_cells, critical_cells, sigma, P)
     
-def regular_Morse_reduction(K):
+def regular_Morse_vertex_reduction(K):
     K_red, all_cells, critical_cells, sigma, P = regular_Morse_aux(deepcopy(K), K.face_poset().list())
     return K_red, critical_cells, sigma
