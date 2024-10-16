@@ -87,6 +87,8 @@ def is_collapsible_vertex(X, v):
     
 # Generalized Morse Core
 
+### Vertex reduction (vertices with collapsible link)
+
 def regular_vertex_reduction_aux(K, all_cells, critical_cells=None, sigma=None, P=None):
     """
     Recursive function to perform Morse core reduction on a simplicial complex.
@@ -186,3 +188,99 @@ def regular_vertex_reduction_aux(K, all_cells, critical_cells=None, sigma=None, 
 def regular_Morse_vertex_reduction(K):
     K_red, all_cells, critical_cells, sigma, P = regular_vertex_reduction_aux(K, K.face_poset().list())
     return K_red, critical_cells, sigma
+    
+### Cells reduction (pair of collapsible cells)
+    
+def regular_Morse_reduction_aux(X, all_cells, critical_cells=None, sigma=None, P=None):
+    """
+    Recursive function to perform Morse core reduction on a simplicial complex.
+    
+    Parameters:
+    - X: face poset of regular CW-complex to be reduced.
+    - all_cells: 
+    - critical_cells: list of critical cells
+    - sigma: acyclic matching.
+    
+    Returns:
+    - Final reduced complex and critical cells.
+    """
+    if critical_cells is None:
+        critical_cells = []  # critical_cells
+    
+    if sigma is None:
+        sigma = []  # matching
+    
+    if P is None:
+        P = {}
+
+        # Initialize flow posets P(w, z) for each pair of cells w and z as entrance path posets
+        for w in X:
+            for z in X:
+                if X.is_less_than(w, z):
+                    P[(w, z)] = entrance_path_poset(X, w, z)
+                else:
+                    P[(w, z)] = Poset(([], [])) 
+    
+    
+    for y in X.maximal_elements():
+        for x in X.lower_covers(y):
+            if len(X.upper_covers(x))==1:
+                # candidate [x, y]
+                print('candidate pair', (x, y))
+                # check regularity
+                P_aux = deepcopy(P)
+
+                updated_pairs = []
+                regular = True  # Assume the structure is regular initially
+
+                for w in all_cells:
+                    if w != x and len(P_aux[(w, y)]) != 0:  # If P(w, y) is non-empty
+                        for z in all_cells:
+                            if z != y and len(P_aux[(x, z)]) != 0:  # If P(x, z) is non-empty
+                                # Update P(w, z) using the 'adjoin' operation
+                                P_aux[(w, z)] = adjoin(
+                                    P_aux[(w, z)], (x, y), P_aux[(w, y)], P_aux[(x, z)], P_aux[(w, x)], P_aux[(y, z)]
+                                )
+                                updated_pairs.append((w, z))
+
+                                # Check regularity immediately after the update
+                                if len(P_aux[(w, z)]) != 0 and not is_collapsible(P_aux[(w, z)]):
+                                    print(f'Non-contractible P[{w}, {z}] after update.')
+                                    regular = False
+                                    break 
+                        if not regular:
+                            break  
+                    
+                if regular:
+                    # update X and sigma
+                    print((x, y), 'regular')
+                    sigma += [(x, y)]
+                    X = remove_point(X, x)
+                    X = remove_point(X, y)
+
+                    for p in updated_pairs:
+                        P[(p[0], p[1])] = P_aux[(p[0], p[1])]
+
+                    # Recursively process the new complex
+                    return regular_Morse_reduction_aux(X, all_cells, critical_cells, sigma, P)
+        
+    # No regular pair is found, pick a cell as critical
+    if len(X) > 0:
+        # Choose a cell to be critical
+        x = next(iter(X.maximal_elements()))  # Pick any maximal cell from the complex
+
+        print(f"No regular pair found, removing critical cell: {x}")
+
+        critical_cells += [x]
+        # Remove the cell from the poset
+        X = remove_point(X, x)
+
+        # Continue iterating after removing the vertex
+        return regular_Morse_reduction_aux(X, all_cells, critical_cells, sigma, P)
+    
+    # Return the final reduced complex, saved cells, and poset modifications
+    return (X, all_cells, critical_cells, sigma, P)
+
+def regular_Morse_reduction(X):
+    (X_red, all_cells, critical_cells, sigma, P) = regular_Morse_reduction_aux(X, X.list())
+    return X_red, critical_cells, sigma
